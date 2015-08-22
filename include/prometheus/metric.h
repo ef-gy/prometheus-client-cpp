@@ -35,6 +35,27 @@
 
 namespace prometheus {
 namespace metric {
+template <typename T = long long> class counter : public collector::base {
+public:
+  counter(const std::string &pName,
+          collector::registry &reg = collector::registry::common())
+      : collector::base(pName, reg, "counter"), val(0) {}
+
+  virtual std::string value(void) const {
+    std::ostringstream oss("");
+    oss << val;
+    return oss.str();
+  }
+
+  counter &inc(const T &v = 1) {
+    val += v;
+    return *this;
+  }
+
+protected:
+  T val;
+};
+
 template <typename T = long long> class gauge : public collector::base {
 public:
   gauge(const std::string &pName,
