@@ -29,10 +29,12 @@
 #if !defined(PROMETHEUS_COLLECTOR_H)
 #define PROMETHEUS_COLLECTOR_H
 
+#include <ef.gy/maybe.h>
 #include <string>
 #include <map>
 #include <vector>
 #include <set>
+#include <ctime>
 
 namespace prometheus {
 namespace collector {
@@ -77,6 +79,13 @@ public:
   virtual std::string value(void) const = 0;
   std::string help;
   std::map<std::string, std::string> label;
+
+  efgy::maybe<long long> timestamp;
+
+  base &updateTimestamp(void) {
+    timestamp = efgy::maybe<long long>((long long) std::time(0));
+    return *this;
+  }
 
 protected:
   registry &registry;

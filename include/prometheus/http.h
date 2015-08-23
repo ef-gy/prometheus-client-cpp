@@ -33,7 +33,25 @@
 #include <prometheus/metric.h>
 
 namespace prometheus {
-std::string text(const collector::base &c) {
+static const std::string escape(const std::string &s) {
+  std::string r = "";
+  for (const auto &c : s) {
+    switch (c) {
+    case '\\':
+      r += "\\\\";
+      break;
+    case '"':
+      r += "\\\"";
+      break;
+    default:
+      r += c;
+      break;
+    }
+  }
+  return r;
+}
+
+static const std::string text(const collector::base &c) {
   std::string reply;
   if (c.type != "") {
     reply += "# TYPE " + c.name + " " + c.type + "\n";
@@ -51,12 +69,17 @@ std::string text(const collector::base &c) {
       } else {
         reply += ",";
       }
-      reply += l.first + "=\"" + l.second + "\"";
+      reply += escape(l.first) + "=\"" + escape(l.second) + "\"";
     }
     reply += "{";
   }
-  reply += " " + c.value() + "\n";
-  return reply;
+  reply += " " + c.value();
+  if ((bool) c.timestamp) {
+    std::ostringstream os("");
+    os << (long long) c.timestamp;
+    reply += " " + os.str();
+  }
+  return reply + "\n";
 }
 
 template <class transport>

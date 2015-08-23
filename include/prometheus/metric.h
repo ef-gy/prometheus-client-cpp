@@ -31,7 +31,6 @@
 
 #include <prometheus/collector.h>
 #include <sstream>
-#include <ctime>
 
 namespace prometheus {
 namespace metric {
