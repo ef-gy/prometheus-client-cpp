@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
 
         s->processor.add("^/$", hello<stream_protocol>);
         s->processor.add("^/quit$", quit<stream_protocol>);
-        s->processor.add("^/metrics$", commonHTTP<stream_protocol>);
+        s->processor.add(http::regex, http::common<stream_protocol>);
 
         targets++;
       } else if (std::regex_match(std::string(argv[i]), matches, http)) {
@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
 
           s->processor.add("^/$", hello<tcp>);
           s->processor.add("^/quit$", quit<tcp>);
-          s->processor.add("^/metrics$", commonHTTP<tcp>);
+          s->processor.add(http::regex, http::common<tcp>);
 
           targets++;
         }
