@@ -67,28 +67,95 @@ public:
 class base {
 public:
   base(const std::string &pName, registry &pRegistry = registry::common(),
-       const std::string &pType = "")
-      : name(pName), registry(pRegistry), type(pType), help() {
+       const std::string &pType = "",
+       const std::vector<const std::string> &pLabels =
+           std::vector<const std::string>())
+      : name(pName), registry(pRegistry), type(pType), help(), child(),
+        labelNames(pLabels) {
     registry.add(*this);
   }
 
-  virtual ~base(void) {}
+  virtual ~base(void) {
+    for (auto &c : child) {
+      delete c;
+    }
+  }
+
+  virtual std::string value(void) const = 0;
+
+  virtual std::string text(void) const {
+    std::string reply;
+    for (const auto &c : child) {
+      reply += c->text();
+    }
+    if (type != "") {
+      reply += "# TYPE " + name + " " + type + "\n";
+    }
+    if (help != "") {
+      reply += "# HELP " + name + " " + help + "\n";
+    }
+    reply += name;
+    if (label.size() > 0) {
+      bool first = true;
+      reply += "{";
+      for (const auto &l : label) {
+        if (first) {
+          first = false;
+        } else {
+          reply += ",";
+        }
+        reply += escape(l.first) + "=\"" + escape(l.second) + "\"";
+      }
+      reply += "{";
+    }
+    reply += " " + value();
+    if ((bool) timestamp) {
+      std::ostringstream os("");
+      os << (long long) timestamp;
+      reply += " " + os.str();
+    }
+    return reply + "\n";
+  }
 
   const std::string name;
   const std::string type;
-  virtual std::string value(void) const = 0;
   std::string help;
   std::map<std::string, std::string> label;
 
   efgy::maybe<long long> timestamp;
 
-  base &updateTimestamp(void) {
-    timestamp = efgy::maybe<long long>((long long) std::time(0));
+  base &updateTimestamp(efgy::maybe<long long> t = efgy::maybe<long long>()) {
+    if ((bool) t) {
+      timestamp = t;
+    } else {
+      timestamp = efgy::maybe<long long>((long long) std::time(0));
+    }
+
     return *this;
   }
 
 protected:
   registry &registry;
+  std::vector<base *> child;
+  const std::vector<const std::string> labelNames;
+
+  static const std::string escape(const std::string &s) {
+    std::string r = "";
+    for (const auto &c : s) {
+      switch (c) {
+      case '\\':
+        r += "\\\\";
+        break;
+      case '"':
+        r += "\\\"";
+        break;
+      default:
+        r += c;
+        break;
+      }
+    }
+    return r;
+  }
 };
 }
 }

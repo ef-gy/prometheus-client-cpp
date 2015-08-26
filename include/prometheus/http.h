@@ -33,54 +33,8 @@
 #include <prometheus/metric.h>
 
 namespace prometheus {
-static const std::string escape(const std::string &s) {
-  std::string r = "";
-  for (const auto &c : s) {
-    switch (c) {
-    case '\\':
-      r += "\\\\";
-      break;
-    case '"':
-      r += "\\\"";
-      break;
-    default:
-      r += c;
-      break;
-    }
-  }
-  return r;
-}
-
-static const std::string text(const collector::base &c) {
-  std::string reply;
-  if (c.type != "") {
-    reply += "# TYPE " + c.name + " " + c.type + "\n";
-  }
-  if (c.help != "") {
-    reply += "# HELP " + c.name + " " + c.help + "\n";
-  }
-  reply += c.name;
-  if (c.label.size() > 0) {
-    bool first = true;
-    reply += "{";
-    for (const auto &l : c.label) {
-      if (first) {
-        first = false;
-      } else {
-        reply += ",";
-      }
-      reply += escape(l.first) + "=\"" + escape(l.second) + "\"";
-    }
-    reply += "{";
-  }
-  reply += " " + c.value();
-  if ((bool) c.timestamp) {
-    std::ostringstream os("");
-    os << (long long) c.timestamp;
-    reply += " " + os.str();
-  }
-  return reply + "\n";
-}
+namespace http {
+static const std::string regex = "^/metrics$";
 
 template <class transport>
 static bool http(typename efgy::net::http::server<transport>::session &session,
@@ -88,7 +42,7 @@ static bool http(typename efgy::net::http::server<transport>::session &session,
   std::string reply = "";
 
   for (const auto &c : reg.collectors) {
-    reply += text(*c);
+    reply += c->text() + "\n";
   }
 
   session.reply(200, "Content-Type: text/plain; version=0.0.4\n", reply);
@@ -98,11 +52,11 @@ static bool http(typename efgy::net::http::server<transport>::session &session,
 
 template <class transport>
 static bool
-commonHTTP(typename efgy::net::http::server<transport>::session &session,
-           std::smatch &) {
+common(typename efgy::net::http::server<transport>::session &session,
+       std::smatch &) {
   return http<transport>(session, collector::registry::common());
 }
-
+}
 }
 
 #endif
