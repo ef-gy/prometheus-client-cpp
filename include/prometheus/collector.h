@@ -68,8 +68,7 @@ class base {
 public:
   base(const std::string &pName, registry &pRegistry = registry::common(),
        const std::string &pType = "",
-       const std::vector<const std::string> &pLabels =
-           std::vector<const std::string>())
+       const std::vector<std::string> &pLabels = std::vector<std::string>())
       : name(pName), registry(pRegistry), type(pType), help(), child(),
         labelNames(pLabels) {
     registry.add(*this);
@@ -137,7 +136,7 @@ public:
 protected:
   registry &registry;
   std::vector<base *> child;
-  const std::vector<const std::string> labelNames;
+  const std::vector<std::string> labelNames;
 
   static const std::string escape(const std::string &s) {
     std::string r = "";
