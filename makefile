@@ -7,6 +7,6 @@ NAME:=prometheus
 	cd .third-party && git clone git://github.com/ef-gy/libefgy.git
 
 include/ef.gy/base.mk: .third-party/libefgy/include/ef.gy/base.mk
-	ln -sf ../.third-party/libefgy/include/ef.gy include/ef.gy
+	ln -sfn ../.third-party/libefgy/include/ef.gy include/ef.gy
 
 server src/server.cpp: include/asio.hpp
