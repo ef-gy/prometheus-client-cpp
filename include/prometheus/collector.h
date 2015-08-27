@@ -157,6 +157,22 @@ protected:
     return r;
   }
 };
+
+class hub : public base {
+public:
+  using base::base;
+
+  virtual std::string value(void) { return ""; }
+
+  virtual std::string text(void) {
+    std::string reply;
+    for (const auto &c : child) {
+      reply += c->text();
+    }
+
+    return reply;
+  }
+};
 }
 }
 
