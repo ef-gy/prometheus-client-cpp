@@ -39,13 +39,13 @@
 namespace prometheus {
 namespace collector {
 class base;
-class registry;
+template <class base> class registry;
 }
 
-static bool setDefaultMetrics(collector::registry &reg);
+static bool setDefaultMetrics(collector::registry<collector::base> &reg);
 
 namespace collector {
-class registry {
+template <class base> class registry {
 public:
   registry(bool addDefaultCollectors = true) : collectors() {
     if (addDefaultCollectors) {
@@ -53,28 +53,45 @@ public:
     }
   }
 
+  virtual ~registry(void) {}
+
   static registry &common(void) {
     static registry reg;
 
     return reg;
   }
 
-  void add(const base &pCollector) { collectors.insert(&pCollector); }
+  virtual std::string text(void) {
+    std::string reply = "";
 
+    for (const auto &c : collectors) {
+      reply += c->text();
+    }
+
+    return reply;
+  }
+
+  void add   (const base &pCollector) { collectors.insert(&pCollector); }
+  void remove(const base &pCollector) { collectors.erase (&pCollector); }
+
+protected:
   std::set<const base *> collectors;
 };
 
 class base {
 public:
-  base(const std::string &pName, registry &pRegistry = registry::common(),
+  base(const std::string &pName,
+       registry<base> &pRegistry = registry<base>::common(),
        const std::string &pType = "",
        const std::vector<std::string> &pLabels = std::vector<std::string>())
-      : name(pName), registry(pRegistry), type(pType), help(), child(),
+      : name(pName), root(pRegistry), type(pType), help(), child(),
         labelNames(pLabels) {
-    registry.add(*this);
+    root.add(*this);
   }
 
   virtual ~base(void) {
+    root.remove(*this);
+
     for (auto &c : child) {
       delete c;
     }
@@ -134,7 +151,7 @@ public:
   }
 
 protected:
-  registry &registry;
+  registry<base> &root;
   std::vector<base *> child;
   const std::vector<std::string> labelNames;
 

@@ -38,14 +38,8 @@ static const std::string regex = "^/metrics$";
 
 template <class transport>
 static bool http(typename efgy::net::http::server<transport>::session &session,
-                 collector::registry &reg) {
-  std::string reply = "";
-
-  for (const auto &c : reg.collectors) {
-    reply += c->text() + "\n";
-  }
-
-  session.reply(200, "Content-Type: text/plain; version=0.0.4\n", reply);
+                 collector::registry<collector::base> &reg) {
+  session.reply(200, "Content-Type: text/plain; version=0.0.4\n", reg.text());
 
   return true;
 }
@@ -54,7 +48,7 @@ template <class transport>
 static bool
 common(typename efgy::net::http::server<transport>::session &session,
        std::smatch &) {
-  return http<transport>(session, collector::registry::common());
+  return http<transport>(session, collector::registry<collector::base>::common());
 }
 }
 }
