@@ -47,7 +47,12 @@ public:
   }
 
   counter &inc(const T &v = 1) {
-    val += v;
+    val += v >= 0 ? v : 0;
+    return *this;
+  }
+
+  counter &set(const T &v) {
+    val = v > val ? v : val;
     return *this;
   }
 
