@@ -161,9 +161,9 @@ class hub : public base {
 public:
   using base::base;
 
-  virtual std::string value(void) { return ""; }
+  virtual std::string value(void) const { return ""; }
 
-  virtual std::string text(void) {
+  virtual std::string text(void) const {
     std::string reply;
     for (const auto &c : child) {
       reply += c->text();
