@@ -125,9 +125,9 @@ public:
       reply += "{";
     }
     reply += " " + value();
-    if ((bool) timestamp) {
+    if ((bool)timestamp) {
       std::ostringstream os("");
-      os << (long long) timestamp;
+      os << (long long)timestamp;
       reply += " " + os.str();
     }
     return reply + "\n";
@@ -141,10 +141,10 @@ public:
   efgy::maybe<long long> timestamp;
 
   base &updateTimestamp(efgy::maybe<long long> t = efgy::maybe<long long>()) {
-    if ((bool) t) {
+    if ((bool)t) {
       timestamp = t;
     } else {
-      timestamp = efgy::maybe<long long>((long long) std::time(0));
+      timestamp = efgy::maybe<long long>((long long)std::time(0));
     }
 
     return *this;
