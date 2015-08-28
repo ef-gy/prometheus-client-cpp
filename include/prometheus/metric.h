@@ -37,7 +37,8 @@ namespace metric {
 template <typename T = long long> class counter : public collector::base {
 public:
   counter(const std::string &pName,
-          collector::registry<collector::base> &reg = collector::registry<collector::base>::common())
+          collector::registry<collector::base> &reg =
+              collector::registry<collector::base>::common())
       : collector::base(pName, reg, "counter"), val(0) {}
 
   virtual std::string value(void) const {
@@ -63,7 +64,8 @@ protected:
 template <typename T = long long> class gauge : public collector::base {
 public:
   gauge(const std::string &pName,
-        collector::registry<collector::base> &reg = collector::registry<collector::base>::common())
+        collector::registry<collector::base> &reg =
+            collector::registry<collector::base>::common())
       : collector::base(pName, reg, "gauge"), val(0) {}
 
   virtual std::string value(void) const {

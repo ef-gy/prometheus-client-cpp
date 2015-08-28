@@ -71,8 +71,8 @@ public:
     return reply;
   }
 
-  void add   (const base &pCollector) { collectors.insert(&pCollector); }
-  void remove(const base &pCollector) { collectors.erase (&pCollector); }
+  void add(const base &pCollector) { collectors.insert(&pCollector); }
+  void remove(const base &pCollector) { collectors.erase(&pCollector); }
 
 protected:
   std::set<const base *> collectors;

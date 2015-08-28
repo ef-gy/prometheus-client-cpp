@@ -48,7 +48,8 @@ template <class transport>
 static bool
 common(typename efgy::net::http::server<transport>::session &session,
        std::smatch &) {
-  return http<transport>(session, collector::registry<collector::base>::common());
+  return http<transport>(session,
+                         collector::registry<collector::base>::common());
 }
 }
 }
