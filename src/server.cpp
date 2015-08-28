@@ -137,8 +137,7 @@ int main(int argc, char *argv[]) {
 
         if (endpoint_iterator != end) {
           tcp::endpoint endpoint = *endpoint_iterator;
-          net::http::server<tcp> *s =
-              new net::http::server<tcp>(endpoint);
+          net::http::server<tcp> *s = new net::http::server<tcp>(endpoint);
 
           s->processor.add("^/$", hello<tcp>);
           s->processor.add("^/quit$", quit<tcp>);
