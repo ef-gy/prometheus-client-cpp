@@ -42,6 +42,7 @@
 
 #define ASIO_DISABLE_THREADS
 #include <prometheus/http.h>
+#include <ef.gy/cli.h>
 
 using namespace efgy;
 using namespace prometheus;
@@ -87,6 +88,28 @@ static bool quit(typename net::http::server<transport>::session &session,
   return true;
 }
 
+template <class sock>
+static std::size_t setup(net::endpoint<sock> lookup,
+                         io::service &service = io::service::common()) {
+  return lookup.with([&service](typename sock::endpoint & endpoint)->bool {
+    net::http::server<sock> *s = new net::http::server<sock>(endpoint, service);
+
+    s->processor.add("^/$", hello<sock>);
+    s->processor.add("^/quit$", quit<sock>);
+    s->processor.add(http::regex, http::common<sock>);
+
+    return true;
+  });
+}
+
+static cli::option oHTTPSocket("http:unix:(.+)", [](std::smatch &m)->bool {
+  return setup(net::endpoint<stream_protocol>(m[1])) > 0;
+});
+
+static cli::option oHTTP("http:(.+):([0-9]+)", [](std::smatch &m)->bool {
+  return setup(net::endpoint<tcp>(m[1], m[2])) > 0;
+});
+
 /**\brief Main function for the HTTP/IRC demo
  *
  * Main function for the network server hello world programme.
@@ -101,60 +124,11 @@ static bool quit(typename net::http::server<transport>::session &session,
  */
 int main(int argc, char *argv[]) {
   try {
-    int targets = 0;
+    int rv = cli::options<>::common().apply(argc, argv) == 0;
 
-    if (argc < 2) {
-      std::cerr << "Usage: server [http:<host>:<port>|http:unix:<path>]...\n";
-      return 1;
-    }
+    io::service::common().run();
 
-    tcp::resolver resolver(io::service::common().get());
-
-    for (unsigned int i = 1; i < argc; i++) {
-      static const std::regex http("http:(.+):([0-9]+)");
-      static const std::regex httpSocket("http:unix:(.+)");
-      std::smatch matches;
-
-      if (std::regex_match(std::string(argv[i]), matches, httpSocket)) {
-        std::string socket = matches[1];
-
-        stream_protocol::endpoint endpoint(socket);
-        net::http::server<stream_protocol> *s =
-            new net::http::server<stream_protocol>(endpoint);
-
-        s->processor.add("^/$", hello<stream_protocol>);
-        s->processor.add("^/quit$", quit<stream_protocol>);
-        s->processor.add(http::regex, http::common<stream_protocol>);
-
-        targets++;
-      } else if (std::regex_match(std::string(argv[i]), matches, http)) {
-        std::string host = matches[1];
-        std::string port = matches[2];
-
-        tcp::resolver::query query(host, port);
-        tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-        tcp::resolver::iterator end;
-
-        if (endpoint_iterator != end) {
-          tcp::endpoint endpoint = *endpoint_iterator;
-          net::http::server<tcp> *s = new net::http::server<tcp>(endpoint);
-
-          s->processor.add("^/$", hello<tcp>);
-          s->processor.add("^/quit$", quit<tcp>);
-          s->processor.add(http::regex, http::common<tcp>);
-
-          targets++;
-        }
-      } else {
-        std::cerr << "Argument not recognised: " << argv[i] << "\n";
-      }
-    }
-
-    if (targets > 0) {
-      io::service::common().run();
-    }
-
-    return 0;
+    return rv;
   } catch (std::exception &e) {
     std::cerr << "Exception: " << e.what() << "\n";
   } catch (std::system_error &e) {
