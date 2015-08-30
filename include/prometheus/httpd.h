@@ -1,19 +1,13 @@
 /**\file
- * \ingroup example-programmes
- * \brief "Hello World" HTTP Server
+ * \brief libefgy HTTP servlet registration.
  *
- * An example HTTP server that only serves /metrics and a 404 on all other
- * resources.
+ * This file defines static variables to automatically register libefgy HTTP
+ * servlets, which are exported using the standard syntax. It also pulls in the
+ * libefgy httpd proper, which in turn already sets up command line parsing for
+ * 'http:...' arguments, which spawn the necessary daemons.
  *
- * Call it like this:
- * \code
- * $ ./hello http:localhost:8080
- * \endcode
- *
- * With localhost and 8080 being a host name and port of your choosing. Then,
- * while the programme is running, open a browser and go to
- * http://localhost:8080/metrics and you should see the rather small list of
- * metrics.
+ * TL;DR: pull in this file to export stuff to prometheus if you can't be
+ * bothered to set everything up yourself.
  *
  * \copyright
  * Copyright (c) 2015, Magnus Achim Deininger <magnus@ef.gy>
@@ -41,14 +35,19 @@
  * \see Licence Terms: https://github.com/jyujin/prometheus-client-cpp/COPYING
  */
 
-#define ASIO_DISABLE_THREADS
-#include <prometheus/httpd.h>
+#if !defined(PROMETHEUS_HTTPD_H)
+#define PROMETHEUS_HTTPD_H
 
-using namespace efgy;
+#include <ef.gy/httpd.h>
+#include <prometheus/http.h>
 
-static httpd::servlet<asio::ip::tcp> TCPQuit("^/quit$",
-                                             httpd::quit<asio::ip::tcp>);
-static httpd::servlet<asio::local::stream_protocol>
-    unixQuit("^/quit$", httpd::quit<asio::local::stream_protocol>);
+namespace prometheus {
+namespace httpd {
+static efgy::httpd::servlet<asio::ip::tcp> tcp(http::regex,
+                                               http::common<asio::ip::tcp>);
+static efgy::httpd::servlet<asio::local::stream_protocol>
+    unix(http::regex, http::common<asio::local::stream_protocol>);
+}
+}
 
-int main(int argc, char *argv[]) { return io::main(argc, argv); }
+#endif
