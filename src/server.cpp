@@ -1,13 +1,13 @@
 /**\file
  * \ingroup example-programmes
- * \brief "Hello World" HTTP Server
+ * \brief Prometheus Example Server
  *
  * An example HTTP server that only serves /metrics and a 404 on all other
  * resources.
  *
  * Call it like this:
  * \code
- * $ ./hello http:localhost:8080
+ * $ ./server http:localhost:8080
  * \endcode
  *
  * With localhost and 8080 being a host name and port of your choosing. Then,
