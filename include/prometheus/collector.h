@@ -39,7 +39,7 @@
 namespace prometheus {
 namespace collector {
 class base;
-template <class base> class registry;
+template <class base = base> class registry;
 }
 
 static bool setDefaultMetrics(collector::registry<collector::base> &reg);
@@ -61,7 +61,7 @@ public:
     return reg;
   }
 
-  virtual std::string text(void) {
+  virtual std::string text(void) const {
     std::string reply = "";
 
     for (const auto &c : collectors) {
@@ -71,28 +71,37 @@ public:
     return reply;
   }
 
-  void add(const base &pCollector) { collectors.insert(&pCollector); }
-  void remove(const base &pCollector) { collectors.erase(&pCollector); }
+  void add(const registry &pCollector) { collectors.insert(&pCollector); }
+  void remove(const registry &pCollector) { collectors.erase(&pCollector); }
 
 protected:
-  std::set<const base *> collectors;
+  std::set<const registry *> collectors;
 };
 
-class base {
+class hub : public registry<base> {
+public:
+  hub(registry<base> &pRegistry = registry<base>::common())
+      : registry<base>(false), root(pRegistry) {
+    root.add(*this);
+  }
+
+  virtual ~hub(void) { root.remove(*this); }
+
+protected:
+  registry<base> &root;
+};
+
+class base : public hub {
 public:
   base(const std::string &pName, const std::string &pType = "",
        const std::vector<std::string> &pLabels = std::vector<std::string>(),
        registry<base> &pRegistry = registry<base>::common(),
        const std::map<std::string, std::string> &pLabel =
            std::map<std::string, std::string>())
-      : name(pName), root(pRegistry), type(pType), help(), child(),
-        labelNames(pLabels), label(pLabel) {
-    root.add(*this);
-  }
+      : name(pName), hub(pRegistry), type(pType), help(), child(),
+        labelNames(pLabels), label(pLabel) {}
 
   virtual ~base(void) {
-    root.remove(*this);
-
     for (auto &c : child) {
       delete c.second;
     }
@@ -102,10 +111,6 @@ public:
 
   virtual std::string text(void) const {
     std::string reply;
-    /*
-    for (const auto &c : child) {
-      reply += c.second->text();
-    }*/
     const std::string ls = labelString(activeLabels());
     if (ls == "") {
       if (type != "") {
@@ -115,6 +120,7 @@ public:
         reply += "# HELP " + name + " " + help + "\n";
       }
     }
+    reply += registry<base>::text();
     reply += name + ls + " " + value();
     if ((bool)timestamp) {
       std::ostringstream os("");
@@ -151,7 +157,6 @@ public:
   }
 
 protected:
-  registry<base> &root;
   std::map<std::string, base *> child;
   std::map<std::string, std::string> label;
   const std::vector<std::string> labelNames;
@@ -201,22 +206,6 @@ protected:
       }
     }
     return r;
-  }
-};
-
-class hub : public base {
-public:
-  using base::base;
-
-  virtual std::string value(void) const { return ""; }
-
-  virtual std::string text(void) const {
-    std::string reply;
-    for (const auto &c : child) {
-      reply += c.second->text();
-    }
-
-    return reply;
   }
 };
 }

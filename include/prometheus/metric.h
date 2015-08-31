@@ -64,7 +64,7 @@ public:
     const auto newLabels = applyLabels(labelValues);
     const auto ls = labelString(newLabels);
     if (!child[ls]) {
-      child[ls] = new counter(name, labelNames, root, newLabels);
+      child[ls] = new counter(name, labelNames, *this, newLabels);
     }
     return *((counter *)child[ls]);
   }
@@ -113,7 +113,7 @@ public:
     const auto newLabels = applyLabels(labelValues);
     const auto ls = labelString(newLabels);
     if (!child[ls]) {
-      child[ls] = new gauge(name, labelNames, root, newLabels);
+      child[ls] = new gauge(name, labelNames, *this, newLabels);
     }
     return *((gauge *)child[ls]);
   }
