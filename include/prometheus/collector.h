@@ -80,12 +80,13 @@ protected:
 
 class base {
 public:
-  base(const std::string &pName,
+  base(const std::string &pName, const std::string &pType = "",
+       const std::vector<std::string> &pLabels = std::vector<std::string>(),
        registry<base> &pRegistry = registry<base>::common(),
-       const std::string &pType = "",
-       const std::vector<std::string> &pLabels = std::vector<std::string>())
+       const std::map<std::string, std::string> &pLabel =
+           std::map<std::string, std::string>())
       : name(pName), root(pRegistry), type(pType), help(), child(),
-        labelNames(pLabels) {
+        labelNames(pLabels), label(pLabel) {
     root.add(*this);
   }
 
@@ -93,7 +94,7 @@ public:
     root.remove(*this);
 
     for (auto &c : child) {
-      delete c;
+      delete c.second;
     }
   }
 
@@ -101,30 +102,20 @@ public:
 
   virtual std::string text(void) const {
     std::string reply;
+    /*
     for (const auto &c : child) {
-      reply += c->text();
-    }
-    if (type != "") {
-      reply += "# TYPE " + name + " " + type + "\n";
-    }
-    if (help != "") {
-      reply += "# HELP " + name + " " + help + "\n";
-    }
-    reply += name;
-    if (label.size() > 0) {
-      bool first = true;
-      reply += "{";
-      for (const auto &l : label) {
-        if (first) {
-          first = false;
-        } else {
-          reply += ",";
-        }
-        reply += escape(l.first) + "=\"" + escape(l.second) + "\"";
+      reply += c.second->text();
+    }*/
+    const std::string ls = labelString(activeLabels());
+    if (ls == "") {
+      if (type != "") {
+        reply += "# TYPE " + name + " " + type + "\n";
       }
-      reply += "{";
+      if (help != "") {
+        reply += "# HELP " + name + " " + help + "\n";
+      }
     }
-    reply += " " + value();
+    reply += name + ls + " " + value();
     if ((bool)timestamp) {
       std::ostringstream os("");
       os << (long long)timestamp;
@@ -136,7 +127,6 @@ public:
   const std::string name;
   const std::string type;
   std::string help;
-  std::map<std::string, std::string> label;
 
   efgy::maybe<long long> timestamp;
 
@@ -150,10 +140,50 @@ public:
     return *this;
   }
 
+  std::map<std::string, std::string> activeLabels(void) const {
+    std::map<std::string, std::string> rv;
+    for (const auto &l : label) {
+      if (l.second != "") {
+        rv[l.first] = l.second;
+      }
+    }
+    return rv;
+  }
+
 protected:
   registry<base> &root;
-  std::vector<base *> child;
+  std::map<std::string, base *> child;
+  std::map<std::string, std::string> label;
   const std::vector<std::string> labelNames;
+
+  std::map<std::string, std::string>
+  applyLabels(const std::vector<std::string> &labelValues) const {
+    std::map<std::string, std::string> rv = activeLabels();
+    for (std::size_t i = 0; i < labelValues.size() && i < labelNames.size();
+         i++) {
+      rv[labelNames[i]] = labelValues[i];
+    }
+    return rv;
+  }
+
+  static std::string
+  labelString(const std::map<std::string, std::string> &labels) {
+    if (labels.size() == 0) {
+      return "";
+    }
+
+    bool first = true;
+    std::string reply = "{";
+    for (const auto &l : labels) {
+      if (first) {
+        first = false;
+      } else {
+        reply += ",";
+      }
+      reply += escape(l.first) + "=\"" + escape(l.second) + "\"";
+    }
+    return reply + "}";
+  }
 
   static const std::string escape(const std::string &s) {
     std::string r = "";
@@ -183,7 +213,7 @@ public:
   virtual std::string text(void) const {
     std::string reply;
     for (const auto &c : child) {
-      reply += c->text();
+      reply += c.second->text();
     }
 
     return reply;

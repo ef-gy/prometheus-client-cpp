@@ -37,9 +37,12 @@ namespace metric {
 template <typename T = long long> class counter : public collector::base {
 public:
   counter(const std::string &pName,
+          const std::vector<std::string> &pLabels = std::vector<std::string>(),
           collector::registry<collector::base> &reg =
-              collector::registry<collector::base>::common())
-      : collector::base(pName, reg, "counter"), val(0) {}
+              collector::registry<collector::base>::common(),
+          const std::map<std::string, std::string> &pLabel =
+              std::map<std::string, std::string>())
+      : collector::base(pName, "counter", pLabels, reg, pLabel), val(0) {}
 
   virtual std::string value(void) const {
     std::ostringstream oss("");
@@ -57,6 +60,15 @@ public:
     return *this;
   }
 
+  counter &labels(const std::vector<std::string> &labelValues) {
+    const auto newLabels = applyLabels(labelValues);
+    const auto ls = labelString(newLabels);
+    if (!child[ls]) {
+      child[ls] = new counter(name, labelNames, root, newLabels);
+    }
+    return *((counter *)child[ls]);
+  }
+
 protected:
   T val;
 };
@@ -64,9 +76,12 @@ protected:
 template <typename T = long long> class gauge : public collector::base {
 public:
   gauge(const std::string &pName,
+        const std::vector<std::string> &pLabels = std::vector<std::string>(),
         collector::registry<collector::base> &reg =
-            collector::registry<collector::base>::common())
-      : collector::base(pName, reg, "gauge"), val(0) {}
+            collector::registry<collector::base>::common(),
+        const std::map<std::string, std::string> &pLabel =
+            std::map<std::string, std::string>())
+      : collector::base(pName, "gauge", pLabels, reg, pLabel), val(0) {}
 
   virtual std::string value(void) const {
     std::ostringstream oss("");
@@ -94,13 +109,22 @@ public:
     return *this;
   }
 
+  gauge &labels(const std::vector<std::string> &labelValues) {
+    const auto newLabels = applyLabels(labelValues);
+    const auto ls = labelString(newLabels);
+    if (!child[ls]) {
+      child[ls] = new gauge(name, labelNames, root, newLabels);
+    }
+    return *((gauge *)child[ls]);
+  }
+
 protected:
   T val;
 };
 }
 
 static bool setDefaultMetrics(collector::registry<collector::base> &reg) {
-  (new metric::gauge<long long>("process_start_time_seconds", reg))
+  (new metric::gauge<long long>("process_start_time_seconds", {}, reg))
       ->setToCurrentTime();
 
   return true;
