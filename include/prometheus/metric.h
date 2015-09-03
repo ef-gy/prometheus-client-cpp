@@ -31,6 +31,7 @@
 
 #include <prometheus/collector.h>
 #include <sstream>
+#include <array>
 
 namespace prometheus {
 namespace metric {
@@ -120,6 +121,54 @@ public:
 
 protected:
   T val;
+};
+
+template <typename T = long long> class histogram : public collector::base {
+public:
+  histogram(const std::string &pName, const std::vector<std::string> &pLabels =
+                                          std::vector<std::string>(),
+            collector::registry<collector::base> &reg =
+                collector::registry<collector::base>::common(),
+            const std::map<std::string, std::string> &pLabel =
+                std::map<std::string, std::string>())
+      : collector::base(pName, "histogram", pLabels, reg, pLabel),
+        count(pName, pLabels, *this, pLabel),
+        sum(pName, pLabels, *this, pLabel), inf(pName, pLabels, *this, pLabel) {
+    inf.label["le"] = "+Inf";
+  }
+
+  histogram &labels(const std::vector<std::string> &labelValues) {
+    const auto newLabels = applyLabels(labelValues);
+    const auto ls = labelString(newLabels);
+    if (!child[ls]) {
+      child[ls] = new histogram(name, labelNames, *this, newLabels);
+    }
+    return *((histogram *)child[ls]);
+  }
+
+  counter<T> &bucket(const T &val) const {
+    for (const auto &b : buckets) {
+      if ((val > b.first()[0]) && (val <= b.first()[1])) {
+        return *b.second();
+      }
+    }
+
+    return inf;
+  }
+
+  histogram &observe(const T &val) {
+    bucket(val).inc();
+    count.inc(val);
+    sum.inc();
+    return *this;
+  }
+
+protected:
+  counter<T> count;
+  gauge<T> sum;
+
+  std::map<std::array<T, 2>, counter<T> *> buckets;
+  counter<T> inf;
 };
 }
 
