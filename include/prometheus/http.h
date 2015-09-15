@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  *
  * \see Documentation: https://ef.gy/documentation/prometheus-client-cpp
- * \see Source Code: https://github.com/jyujin/prometheus-client-cpp
- * \see Licence Terms: https://github.com/jyujin/prometheus-client-cpp/COPYING
+ * \see Source Code: https://github.com/ef-gy/prometheus-client-cpp
+ * \see Licence Terms: https://github.com/ef-gy/prometheus-client-cpp/COPYING
  */
 
 #if !defined(PROMETHEUS_HTTP_H)
