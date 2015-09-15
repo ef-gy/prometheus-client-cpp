@@ -31,7 +31,6 @@
 
 #include <prometheus/collector.h>
 #include <sstream>
-#include <array>
 
 namespace prometheus {
 namespace metric {
@@ -148,7 +147,7 @@ public:
 
   counter<T> &bucket(const T &val) const {
     for (const auto &b : buckets) {
-      if ((val > b.first()[0]) && (val <= b.first()[1])) {
+      if (val <= b.first()) {
         return *b.second();
       }
     }
@@ -167,7 +166,7 @@ protected:
   counter<T> count;
   gauge<T> sum;
 
-  std::map<std::array<T, 2>, counter<T> *> buckets;
+  std::map<T, counter<T> *> buckets;
   counter<T> inf;
 };
 }

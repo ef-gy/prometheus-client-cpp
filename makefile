@@ -8,5 +8,3 @@ NAME:=prometheus
 
 include/ef.gy/base.mk: .third-party/libefgy/include/ef.gy/base.mk
 	ln -sfn ../.third-party/libefgy/include/ef.gy include/ef.gy
-
-server src/server.cpp: include/asio.hpp
