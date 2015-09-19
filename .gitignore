@@ -4,3 +4,5 @@ include/asio*
 .third-party
 *.tag
 server
+documentation
+doxyfile
