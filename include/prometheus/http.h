@@ -34,7 +34,7 @@
 
 namespace prometheus {
 namespace http {
-static const std::string regex = "^/metrics$";
+static const std::string regex = "/metrics";
 
 template <class transport>
 static bool http(typename efgy::net::http::server<transport>::session &session,
