@@ -1,7 +1,4 @@
 dependencies.mk
-include/ef.gy
-include/asio*
-.third-party
 *.tag
 server
 documentation
