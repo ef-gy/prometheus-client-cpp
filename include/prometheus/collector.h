@@ -13,7 +13,6 @@
 #if !defined(PROMETHEUS_COLLECTOR_H)
 #define PROMETHEUS_COLLECTOR_H
 
-#include <ef.gy/maybe.h>
 #include <string>
 #include <map>
 #include <vector>
@@ -106,9 +105,9 @@ public:
     }
     reply += registry<base>::text();
     reply += name + ls + " " + value();
-    if ((bool)timestamp) {
+    if (haveTimestamp) {
       std::ostringstream os("");
-      os << (long long)timestamp;
+      os << timestamp;
       reply += " " + os.str();
     }
     return reply + "\n";
@@ -118,14 +117,19 @@ public:
   const std::string type;
   std::string help;
 
-  efgy::maybe<long long> timestamp;
+  bool haveTimestamp;
+  long long timestamp;
 
-  base &updateTimestamp(efgy::maybe<long long> t = efgy::maybe<long long>()) {
-    if ((bool)t) {
-      timestamp = t;
-    } else {
-      timestamp = efgy::maybe<long long>((long long)std::time(0));
-    }
+  base &updateTimestamp(void) {
+    haveTimestamp = false;
+    timestamp = 0;
+
+    return *this;
+  }
+
+  base &updateTimestamp(long long t) {
+    haveTimestamp = true;
+    timestamp = t;
 
     return *this;
   }

@@ -4,3 +4,6 @@
 [submodule "dependencies/libefgy"]
 	path = dependencies/libefgy
 	url = https://github.com/ef-gy/libefgy.git
+[submodule "dependencies/cxxhttp"]
+	path = dependencies/cxxhttp
+	url = https://github.com/ef-gy/cxxhttp.git

@@ -13,7 +13,7 @@
 #if !defined(PROMETHEUS_HTTP_H)
 #define PROMETHEUS_HTTP_H
 
-#include <ef.gy/http.h>
+#include <cxxhttp/http.h>
 #include <prometheus/metric.h>
 
 namespace prometheus {
@@ -21,16 +21,16 @@ namespace http {
 static const std::string regex = "/metrics";
 
 template <class transport>
-static bool http(typename efgy::net::http::server<transport>::session &session,
+static bool http(typename cxxhttp::http::server<transport>::session &session,
                  collector::registry<collector::base> &reg) {
-  session.reply(200, "Content-Type: text/plain; version=0.0.4\n", reg.text());
+  session.reply(200, {{"Content-Type", "text/plain; version=0.0.4"}}, reg.text());
 
   return true;
 }
 
 template <class transport>
 static bool
-common(typename efgy::net::http::server<transport>::session &session,
+common(typename cxxhttp::http::server<transport>::session &session,
        std::smatch &) {
   return http<transport>(session,
                          collector::registry<collector::base>::common());

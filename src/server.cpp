@@ -26,13 +26,5 @@
  */
 
 #define ASIO_DISABLE_THREADS
+#define USE_DEFAULT_IO_MAIN
 #include <prometheus/httpd.h>
-
-using namespace efgy;
-
-static httpd::servlet<asio::ip::tcp> TCPQuit("^/quit$",
-                                             httpd::quit<asio::ip::tcp>);
-static httpd::servlet<asio::local::stream_protocol>
-    unixQuit("^/quit$", httpd::quit<asio::local::stream_protocol>);
-
-int main(int argc, char *argv[]) { return io::main(argc, argv); }

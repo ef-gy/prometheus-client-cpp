@@ -22,14 +22,14 @@
 #if !defined(PROMETHEUS_HTTPD_H)
 #define PROMETHEUS_HTTPD_H
 
-#include <ef.gy/httpd.h>
+#include <cxxhttp/httpd.h>
 #include <prometheus/http.h>
 
 namespace prometheus {
 namespace httpd {
-static efgy::httpd::servlet<asio::ip::tcp> tcp(http::regex,
+static cxxhttp::httpd::servlet<asio::ip::tcp> tcp(http::regex,
                                                http::common<asio::ip::tcp>);
-static efgy::httpd::servlet<asio::local::stream_protocol>
+static cxxhttp::httpd::servlet<asio::local::stream_protocol>
     unix(http::regex, http::common<asio::local::stream_protocol>);
 }
 }
