@@ -1,35 +1,38 @@
-/**\file
+/* Prometheus Collector
  *
- * \copyright
+ * See also:
+ * * Documentation: https://ef.gy/documentation/prometheus-client-cpp
+ * * Source Code: https://github.com/ef-gy/prometheus-client-cpp
+ * * Licence: https://github.com/ef-gy/prometheus-client-cpp/blob/master/COPYING
+ *
+ * @copyright
  * This file is part of a Prometheus CPP client, which is released as open
  * source under the terms of an MIT/X11-style licence, described in the COPYING
  * file.
- *
- * \see Documentation: https://ef.gy/documentation/prometheus-client-cpp
- * \see Source Code: https://github.com/ef-gy/prometheus-client-cpp
- * \see Licence Terms: https://github.com/ef-gy/prometheus-client-cpp/COPYING
  */
 
 #if !defined(PROMETHEUS_COLLECTOR_H)
 #define PROMETHEUS_COLLECTOR_H
 
-#include <string>
-#include <map>
-#include <vector>
-#include <set>
 #include <ctime>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace prometheus {
 namespace collector {
 class base;
-template <class base = base> class registry;
+template <class base = base>
+class registry;
 }
 
 static bool setDefaultMetrics(collector::registry<collector::base> &reg);
 
 namespace collector {
-template <class base> class registry {
-public:
+template <class base>
+class registry {
+ public:
   registry(bool addDefaultCollectors = true) : collectors() {
     if (addDefaultCollectors) {
       setDefaultMetrics(*this);
@@ -57,12 +60,12 @@ public:
   void add(const registry &pCollector) { collectors.insert(&pCollector); }
   void remove(const registry &pCollector) { collectors.erase(&pCollector); }
 
-protected:
+ protected:
   std::set<const registry *> collectors;
 };
 
 class hub : public registry<base> {
-public:
+ public:
   hub(registry<base> &pRegistry = registry<base>::common())
       : registry<base>(false), root(pRegistry) {
     root.add(*this);
@@ -70,19 +73,25 @@ public:
 
   virtual ~hub(void) { root.remove(*this); }
 
-protected:
+ protected:
   registry<base> &root;
 };
 
 class base : public hub {
-public:
+ public:
   base(const std::string &pName, const std::string &pType = "",
        const std::vector<std::string> &pLabels = std::vector<std::string>(),
        registry<base> &pRegistry = registry<base>::common(),
        const std::map<std::string, std::string> &pLabel =
            std::map<std::string, std::string>())
-      : name(pName), hub(pRegistry), type(pType), help(), child(),
-        labelNames(pLabels), label(pLabel) {}
+      : name(pName),
+        hub(pRegistry),
+        type(pType),
+        help(),
+        child(),
+        labelNames(pLabels),
+        label(pLabel),
+        haveTimestamp(false) {}
 
   virtual ~base(void) {
     for (auto &c : child) {
@@ -122,7 +131,6 @@ public:
 
   base &updateTimestamp(void) {
     haveTimestamp = false;
-    timestamp = 0;
 
     return *this;
   }
@@ -144,13 +152,13 @@ public:
     return rv;
   }
 
-protected:
+ protected:
   std::map<std::string, base *> child;
   std::map<std::string, std::string> label;
   const std::vector<std::string> labelNames;
 
-  std::map<std::string, std::string>
-  applyLabels(const std::vector<std::string> &labelValues) const {
+  std::map<std::string, std::string> applyLabels(
+      const std::vector<std::string> &labelValues) const {
     std::map<std::string, std::string> rv = activeLabels();
     for (std::size_t i = 0; i < labelValues.size() && i < labelNames.size();
          i++) {
@@ -159,8 +167,8 @@ protected:
     return rv;
   }
 
-  static std::string
-  labelString(const std::map<std::string, std::string> &labels) {
+  static std::string labelString(
+      const std::map<std::string, std::string> &labels) {
     if (labels.size() == 0) {
       return "";
     }
@@ -182,15 +190,15 @@ protected:
     std::string r = "";
     for (const auto &c : s) {
       switch (c) {
-      case '\\':
-        r += "\\\\";
-        break;
-      case '"':
-        r += "\\\"";
-        break;
-      default:
-        r += c;
-        break;
+        case '\\':
+          r += "\\\\";
+          break;
+        case '"':
+          r += "\\\"";
+          break;
+        default:
+          r += c;
+          break;
       }
     }
     return r;

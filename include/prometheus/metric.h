@@ -1,13 +1,14 @@
-/**\file
+/* Prometheus metric types.
  *
- * \copyright
+ * See also:
+ * * Documentation: https://ef.gy/documentation/prometheus-client-cpp
+ * * Source Code: https://github.com/ef-gy/prometheus-client-cpp
+ * * Licence: https://github.com/ef-gy/prometheus-client-cpp/blob/master/COPYING
+ *
+ * @copyright
  * This file is part of a Prometheus CPP client, which is released as open
  * source under the terms of an MIT/X11-style licence, described in the COPYING
  * file.
- *
- * \see Documentation: https://ef.gy/documentation/prometheus-client-cpp
- * \see Source Code: https://github.com/ef-gy/prometheus-client-cpp
- * \see Licence Terms: https://github.com/ef-gy/prometheus-client-cpp/COPYING
  */
 
 #if !defined(PROMETHEUS_METRIC_H)
@@ -18,8 +19,9 @@
 
 namespace prometheus {
 namespace metric {
-template <typename T = long long> class counter : public collector::base {
-public:
+template <typename T = long long>
+class counter : public collector::base {
+ public:
   counter(const std::string &pName,
           const std::vector<std::string> &pLabels = std::vector<std::string>(),
           collector::registry<collector::base> &reg =
@@ -53,12 +55,13 @@ public:
     return *((counter *)child[ls]);
   }
 
-protected:
+ protected:
   T val;
 };
 
-template <typename T = long long> class gauge : public collector::base {
-public:
+template <typename T = long long>
+class gauge : public collector::base {
+ public:
   gauge(const std::string &pName,
         const std::vector<std::string> &pLabels = std::vector<std::string>(),
         collector::registry<collector::base> &reg =
@@ -102,12 +105,13 @@ public:
     return *((gauge *)child[ls]);
   }
 
-protected:
+ protected:
   T val;
 };
 
-template <typename T = long long> class histogram : public collector::base {
-public:
+template <typename T = long long>
+class histogram : public collector::base {
+ public:
   histogram(const std::string &pName, const std::vector<std::string> &pLabels =
                                           std::vector<std::string>(),
             collector::registry<collector::base> &reg =
@@ -116,7 +120,8 @@ public:
                 std::map<std::string, std::string>())
       : collector::base(pName, "histogram", pLabels, reg, pLabel),
         count(pName, pLabels, *this, pLabel),
-        sum(pName, pLabels, *this, pLabel), inf(pName, pLabels, *this, pLabel) {
+        sum(pName, pLabels, *this, pLabel),
+        inf(pName, pLabels, *this, pLabel) {
     inf.label["le"] = "+Inf";
   }
 
@@ -146,7 +151,7 @@ public:
     return *this;
   }
 
-protected:
+ protected:
   counter<T> count;
   gauge<T> sum;
 
