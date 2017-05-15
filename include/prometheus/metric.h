@@ -25,8 +25,7 @@ class counter : public collector::base {
  public:
   counter(const std::string &pName,
           const std::vector<std::string> &pLabels = std::vector<std::string>(),
-          collector::registry<collector::base> &reg =
-              efgy::global<collector::registry<collector::base>>(),
+          collector::base &reg = efgy::global<collector::base>(),
           const std::map<std::string, std::string> &pLabel =
               std::map<std::string, std::string>())
       : collector::base(pName, "counter", pLabels, reg, pLabel), val(0) {}
@@ -67,8 +66,7 @@ class gauge : public collector::base {
  public:
   gauge(const std::string &pName,
         const std::vector<std::string> &pLabels = std::vector<std::string>(),
-        collector::registry<collector::base> &reg =
-            efgy::global<collector::registry<collector::base>>(),
+        collector::base &reg = efgy::global<collector::base>(),
         const std::map<std::string, std::string> &pLabel =
             std::map<std::string, std::string>())
       : collector::base(pName, "gauge", pLabels, reg, pLabel), val(0) {}
@@ -121,8 +119,7 @@ class histogram : public collector::base {
  public:
   histogram(const std::string &pName, const std::vector<std::string> &pLabels =
                                           std::vector<std::string>(),
-            collector::registry<collector::base> &reg =
-                efgy::global<collector::registry<collector::base>>(),
+            collector::base &reg = efgy::global<collector::base>(),
             const std::map<std::string, std::string> &pLabel =
                 std::map<std::string, std::string>())
       : collector::base(pName, "histogram", pLabels, reg, pLabel),
@@ -175,8 +172,7 @@ using histogram = custom::histogram<long long>;
 namespace special {
 class processStartTime : public metric::gauge {
  public:
-  processStartTime(collector::registry<collector::base> &reg =
-                       efgy::global<collector::registry<collector::base>>())
+  processStartTime(collector::base &reg = efgy::global<collector::base>())
       : metric::gauge("process_start_time_seconds", {}, reg) {
     setToCurrentTime();
   }

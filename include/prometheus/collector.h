@@ -22,65 +22,36 @@
 
 namespace prometheus {
 namespace collector {
-class base;
-template <class base = base>
-class registry;
-}
-
-namespace collector {
-template <class base>
-class registry : public std::set<const registry<base> *> {
+class base {
  public:
-  virtual ~registry(void) {}
+  base(void) : root(*this), haveTimestamp(false), wasSet(false) {}
 
-  virtual std::string text(void) const {
-    std::string reply;
-
-    for (const auto &c : *this) {
-      reply += c->text();
-    }
-
-    return reply;
-  }
-};
-
-class hub : public registry<base> {
- public:
-  hub(registry<base> &pRegistry = efgy::global<registry<base>>())
-      : root(pRegistry) {
-    root.insert(this);
-  }
-
-  virtual ~hub(void) { root.erase(this); }
-
- protected:
-  registry<base> &root;
-};
-
-class base : public hub {
- public:
   base(const std::string &pName, const std::string &pType = "",
        const std::vector<std::string> &pLabels = std::vector<std::string>(),
-       registry<base> &pRegistry = efgy::global<registry<base>>(),
+       base &pRegistry = efgy::global<base>(),
        const std::map<std::string, std::string> &pLabel =
            std::map<std::string, std::string>())
       : name(pName),
-        hub(pRegistry),
+        root(pRegistry),
         type(pType),
-        help(),
-        child(),
         labelNames(pLabels),
         label(pLabel),
         haveTimestamp(false),
-        wasSet(false) {}
+        wasSet(false) {
+    root.descendant.insert(this);
+  }
 
   virtual ~base(void) {
+    root.descendant.erase(this);
     for (auto &c : child) {
       delete c.second;
     }
   }
 
-  virtual std::string value(void) const = 0;
+  std::set<const base *> descendant;
+
+  virtual std::string value(void) const { return "0"; }
+
   bool wasSet;
 
   virtual std::string text(void) const {
@@ -94,7 +65,10 @@ class base : public hub {
         reply += "# HELP " + name + " " + help + "\n";
       }
     }
-    const auto &subtext = hub::text();
+    std::string subtext;
+    for (const auto &c : descendant) {
+      subtext += c->text();
+    }
     reply += subtext;
     if (wasSet || subtext.empty()) {
       reply += name + ls + " " + value();
@@ -139,6 +113,7 @@ class base : public hub {
   }
 
  protected:
+  base &root;
   std::map<std::string, base *> child;
   std::map<std::string, std::string> label;
   const std::vector<std::string> labelNames;

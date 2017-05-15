@@ -54,7 +54,7 @@ static void updateLabels(const std::string &label) {
 template <class transport>
 static void metrics(typename cxxhttp::http::server<transport>::session &session,
                     std::smatch &) {
-  static auto &reg = efgy::global<collector::registry<collector::base>>();
+  static auto &reg = efgy::global<collector::base>();
   updateLabels<cxxhttp::transport::tcp>("tcp");
   updateLabels<cxxhttp::transport::unix>("unix");
 
