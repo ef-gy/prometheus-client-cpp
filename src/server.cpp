@@ -25,7 +25,8 @@
 
 #define ASIO_DISABLE_THREADS
 #define USE_DEFAULT_IO_MAIN
-#include <prometheus/httpd.h>
+
+#include <prometheus/httpd-metrics.h>
 
 #include <cxxhttp/httpd-options.h>
 #include <cxxhttp/httpd-trace.h>

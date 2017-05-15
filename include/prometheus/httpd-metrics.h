@@ -1,4 +1,7 @@
-/* HTTP server fragments.
+/* HTTP server metrics servlet.
+ *
+ * Implements a `cxxhttp` servlet that provides a handler for the /metrics
+ * location, which exports statistics to a Prometheus server.
  *
  * See also:
  * * Documentation: https://ef.gy/documentation/prometheus-client-cpp
@@ -11,20 +14,27 @@
  * file.
  */
 
-#if !defined(PROMETHEUS_HTTP_H)
-#define PROMETHEUS_HTTP_H
+#if !defined(PROMETHEUS_HTTPD_METRICS_H)
+#define PROMETHEUS_HTTPD_METRICS_H
 
-#include <cxxhttp/http.h>
+#include <cxxhttp/httpd.h>
 #include <prometheus/metric.h>
 
 namespace prometheus {
-namespace http {
-static const std::string resource = "/metrics";
-
-static metric::gauge sessions("http_sessions_total", {"transport"});
-static metric::gauge servers("http_servers_total", {"transport"});
-static metric::gauge servlets("http_servlets_total", {"transport"});
-static metric::gauge clients("http_clients_total", {"transport"});
+namespace httpd {
+static metric::gauge sessions(
+    "http_sessions_total",
+    "Active HTTP sessions, broken out by transport type.", {"transport"});
+static metric::gauge servers(
+    "http_servers_total", "Active HTTP servers, broken out by transport type.",
+    {"transport"});
+static metric::gauge servlets(
+    "http_servlets_total",
+    "Active HTTP server servlets, broken out by transport type.",
+    {"transport"});
+static metric::gauge clients(
+    "http_clients_total", "Active HTTP clients, broken out by transport type.",
+    {"transport"});
 
 template <class transport>
 static void updateLabels(const std::string &label) {
@@ -51,15 +61,24 @@ static void updateLabels(const std::string &label) {
   sessions.labels({label}).set(ses);
 }
 
+namespace metrics {
 template <class transport>
 static void metrics(typename cxxhttp::http::server<transport>::session &session,
                     std::smatch &) {
-  static auto &reg = efgy::global<collector::base>();
+  static auto &reg = efgy::global<collector>();
   updateLabels<cxxhttp::transport::tcp>("tcp");
   updateLabels<cxxhttp::transport::unix>("unix");
 
   session.reply(200, {{"Content-Type", "text/plain; version=0.0.4"}},
                 reg.text());
+}
+
+static const std::string resource = "/metrics";
+
+static cxxhttp::httpd::servlet<asio::ip::tcp> tcp(resource,
+                                                  metrics<asio::ip::tcp>);
+static cxxhttp::httpd::servlet<asio::local::stream_protocol> unix(
+    resource, metrics<asio::local::stream_protocol>);
 }
 }
 }

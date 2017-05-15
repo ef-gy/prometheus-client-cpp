@@ -1,4 +1,10 @@
-/* Prometheus Collector
+/* Prometheus Client Base Collector
+ *
+ * Contains the collector class, which is the root for all other metric
+ * collector classes.
+ *
+ * Prometheus metric collectors are a tree-shaped construct, at least with all
+ * the support for labels that is mandated in the specs.
  *
  * See also:
  * * Documentation: https://ef.gy/documentation/prometheus-client-cpp
@@ -21,19 +27,31 @@
 #include <vector>
 
 namespace prometheus {
-namespace collector {
-class base {
+class collector {
  public:
-  base(void) : root(*this), haveTimestamp(false), wasSet(false) {}
+  const std::string name;
+  const std::string type;
+  const std::string help;
 
-  base(const std::string &pName, const std::string &pType = "",
-       const std::vector<std::string> &pLabels = std::vector<std::string>(),
-       base &pRegistry = efgy::global<base>(),
-       const std::map<std::string, std::string> &pLabel =
-           std::map<std::string, std::string>())
+  long long timestamp;
+
+  bool wasSet;
+  bool haveTimestamp;
+  std::set<const collector *> descendant;
+
+  collector(void) : root(*this), haveTimestamp(false), wasSet(false) {}
+
+  collector(
+      const std::string &pName, const std::string &pType = "",
+      const std::string &pHelp = "",
+      const std::vector<std::string> &pLabels = std::vector<std::string>(),
+      collector &pRegistry = efgy::global<collector>(),
+      const std::map<std::string, std::string> &pLabel =
+          std::map<std::string, std::string>())
       : name(pName),
         root(pRegistry),
         type(pType),
+        help(pHelp),
         labelNames(pLabels),
         label(pLabel),
         haveTimestamp(false),
@@ -41,20 +59,16 @@ class base {
     root.descendant.insert(this);
   }
 
-  virtual ~base(void) {
+  virtual ~collector(void) {
     root.descendant.erase(this);
     for (auto &c : child) {
       delete c.second;
     }
   }
 
-  std::set<const base *> descendant;
-
   virtual std::string value(void) const { return "0"; }
 
-  bool wasSet;
-
-  virtual std::string text(void) const {
+  std::string text(void) const {
     std::string reply;
     const std::string ls = labelString(activeLabels());
     if (ls == "") {
@@ -82,20 +96,13 @@ class base {
     return reply;
   }
 
-  const std::string name;
-  const std::string type;
-  std::string help;
-
-  bool haveTimestamp;
-  long long timestamp;
-
-  base &updateTimestamp(void) {
+  collector &updateTimestamp(void) {
     haveTimestamp = false;
 
     return *this;
   }
 
-  base &updateTimestamp(long long t) {
+  collector &updateTimestamp(long long t) {
     haveTimestamp = true;
     timestamp = t;
 
@@ -113,8 +120,8 @@ class base {
   }
 
  protected:
-  base &root;
-  std::map<std::string, base *> child;
+  collector &root;
+  std::map<std::string, collector *> child;
   std::map<std::string, std::string> label;
   const std::vector<std::string> labelNames;
 
@@ -165,7 +172,6 @@ class base {
     return r;
   }
 };
-}
 }
 
 #endif

@@ -21,14 +21,14 @@ namespace prometheus {
 namespace metric {
 namespace custom {
 template <typename T>
-class counter : public collector::base {
+class counter : public collector {
  public:
-  counter(const std::string &pName,
+  counter(const std::string &pName, const std::string &pHelp,
           const std::vector<std::string> &pLabels = std::vector<std::string>(),
-          collector::base &reg = efgy::global<collector::base>(),
+          collector &reg = efgy::global<collector>(),
           const std::map<std::string, std::string> &pLabel =
               std::map<std::string, std::string>())
-      : collector::base(pName, "counter", pLabels, reg, pLabel), val(0) {}
+      : collector(pName, "counter", pHelp, pLabels, reg, pLabel), val(0) {}
 
   virtual std::string value(void) const {
     std::ostringstream oss("");
@@ -52,7 +52,7 @@ class counter : public collector::base {
     const auto newLabels = applyLabels(labelValues);
     const auto ls = labelString(newLabels);
     if (!child[ls]) {
-      child[ls] = new counter(name, labelNames, *this, newLabels);
+      child[ls] = new counter(name, help, labelNames, *this, newLabels);
     }
     return *((counter *)child[ls]);
   }
@@ -62,14 +62,14 @@ class counter : public collector::base {
 };
 
 template <typename T>
-class gauge : public collector::base {
+class gauge : public collector {
  public:
-  gauge(const std::string &pName,
+  gauge(const std::string &pName, const std::string &pHelp,
         const std::vector<std::string> &pLabels = std::vector<std::string>(),
-        collector::base &reg = efgy::global<collector::base>(),
+        collector &reg = efgy::global<collector>(),
         const std::map<std::string, std::string> &pLabel =
             std::map<std::string, std::string>())
-      : collector::base(pName, "gauge", pLabels, reg, pLabel), val(0) {}
+      : collector(pName, "gauge", pHelp, pLabels, reg, pLabel), val(0) {}
 
   virtual std::string value(void) const {
     std::ostringstream oss("");
@@ -105,7 +105,7 @@ class gauge : public collector::base {
     const auto newLabels = applyLabels(labelValues);
     const auto ls = labelString(newLabels);
     if (!child[ls]) {
-      child[ls] = new gauge(name, labelNames, *this, newLabels);
+      child[ls] = new gauge(name, help, labelNames, *this, newLabels);
     }
     return *((gauge *)child[ls]);
   }
@@ -115,14 +115,15 @@ class gauge : public collector::base {
 };
 
 template <typename T>
-class histogram : public collector::base {
+class histogram : public collector {
  public:
-  histogram(const std::string &pName, const std::vector<std::string> &pLabels =
-                                          std::vector<std::string>(),
-            collector::base &reg = efgy::global<collector::base>(),
-            const std::map<std::string, std::string> &pLabel =
-                std::map<std::string, std::string>())
-      : collector::base(pName, "histogram", pLabels, reg, pLabel),
+  histogram(
+      const std::string &pName, const std::string &pHelp,
+      const std::vector<std::string> &pLabels = std::vector<std::string>(),
+      collector &reg = efgy::global<collector>(),
+      const std::map<std::string, std::string> &pLabel =
+          std::map<std::string, std::string>())
+      : collector(pName, "histogram", pHelp, pLabels, reg, pLabel),
         count(pName, pLabels, *this, pLabel),
         sum(pName, pLabels, *this, pLabel),
         inf(pName, pLabels, *this, pLabel) {
@@ -133,7 +134,7 @@ class histogram : public collector::base {
     const auto newLabels = applyLabels(labelValues);
     const auto ls = labelString(newLabels);
     if (!child[ls]) {
-      child[ls] = new histogram(name, labelNames, *this, newLabels);
+      child[ls] = new histogram(name, help, labelNames, *this, newLabels);
     }
     return *((histogram *)child[ls]);
   }
@@ -172,8 +173,10 @@ using histogram = custom::histogram<long long>;
 namespace special {
 class processStartTime : public metric::gauge {
  public:
-  processStartTime(collector::base &reg = efgy::global<collector::base>())
-      : metric::gauge("process_start_time_seconds", {}, reg) {
+  processStartTime(collector &reg = efgy::global<collector>())
+      : metric::gauge("process_start_time_seconds",
+                      "UNIX time stamp of when the process has started.", {},
+                      reg) {
     setToCurrentTime();
   }
 };
