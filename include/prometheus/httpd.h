@@ -27,10 +27,10 @@
 
 namespace prometheus {
 namespace httpd {
-static cxxhttp::httpd::servlet<asio::ip::tcp> tcp(http::regex,
-                                                  http::common<asio::ip::tcp>);
+static cxxhttp::httpd::servlet<asio::ip::tcp> tcp(http::resource,
+                                                  http::metrics<asio::ip::tcp>);
 static cxxhttp::httpd::servlet<asio::local::stream_protocol> unix(
-    http::regex, http::common<asio::local::stream_protocol>);
+    http::resource, http::metrics<asio::local::stream_protocol>);
 }
 }
 

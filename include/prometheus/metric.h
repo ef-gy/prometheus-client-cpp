@@ -19,13 +19,14 @@
 
 namespace prometheus {
 namespace metric {
-template <typename T = long long>
+namespace custom {
+template <typename T>
 class counter : public collector::base {
  public:
   counter(const std::string &pName,
           const std::vector<std::string> &pLabels = std::vector<std::string>(),
           collector::registry<collector::base> &reg =
-              collector::registry<collector::base>::common(),
+              efgy::global<collector::registry<collector::base>>(),
           const std::map<std::string, std::string> &pLabel =
               std::map<std::string, std::string>())
       : collector::base(pName, "counter", pLabels, reg, pLabel), val(0) {}
@@ -59,13 +60,13 @@ class counter : public collector::base {
   T val;
 };
 
-template <typename T = long long>
+template <typename T>
 class gauge : public collector::base {
  public:
   gauge(const std::string &pName,
         const std::vector<std::string> &pLabels = std::vector<std::string>(),
         collector::registry<collector::base> &reg =
-            collector::registry<collector::base>::common(),
+            efgy::global<collector::registry<collector::base>>(),
         const std::map<std::string, std::string> &pLabel =
             std::map<std::string, std::string>())
       : collector::base(pName, "gauge", pLabels, reg, pLabel), val(0) {}
@@ -109,13 +110,13 @@ class gauge : public collector::base {
   T val;
 };
 
-template <typename T = long long>
+template <typename T>
 class histogram : public collector::base {
  public:
   histogram(const std::string &pName, const std::vector<std::string> &pLabels =
                                           std::vector<std::string>(),
             collector::registry<collector::base> &reg =
-                collector::registry<collector::base>::common(),
+                efgy::global<collector::registry<collector::base>>(),
             const std::map<std::string, std::string> &pLabel =
                 std::map<std::string, std::string>())
       : collector::base(pName, "histogram", pLabels, reg, pLabel),
@@ -160,8 +161,13 @@ class histogram : public collector::base {
 };
 }
 
+using gauge = custom::gauge<long long>;
+using counter = custom::counter<long long>;
+using histogram = custom::histogram<long long>;
+}
+
 static bool setDefaultMetrics(collector::registry<collector::base> &reg) {
-  (new metric::gauge<long long>("process_start_time_seconds", {}, reg))
+  (new metric::gauge("process_start_time_seconds", {}, reg))
       ->setToCurrentTime();
 
   return true;

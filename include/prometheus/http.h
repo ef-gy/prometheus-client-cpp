@@ -19,22 +19,47 @@
 
 namespace prometheus {
 namespace http {
-static const std::string regex = "/metrics";
+static const std::string resource = "/metrics";
+
+static metric::gauge sessions("http_server_sessions_total", {"transport"});
+static metric::gauge servers("http_servers_total", {"transport"});
+static metric::gauge servlets("http_servlets_total", {"transport"});
+static metric::gauge clients("http_clients_total", {"transport"});
 
 template <class transport>
-static bool http(typename cxxhttp::http::server<transport>::session &session,
-                 collector::registry<collector::base> &reg) {
-  session.reply(200, {{"Content-Type", "text/plain; version=0.0.4"}},
-                reg.text());
+static void updateLabels(const std::string &label) {
+  const auto &ser =
+      efgy::global<std::set<cxxhttp::http::server<transport> *>>();
+  const auto &cli =
+      efgy::global<std::set<cxxhttp::http::client<transport> *>>();
+  const auto &srv =
+      efgy::global<std::set<cxxhttp::httpd::servlet<transport> *>>();
 
-  return true;
+  servers.labels({label}).set(ser.size());
+  servlets.labels({label}).set(srv.size());
+  clients.labels({label}).set(cli.size());
+
+  std::size_t ses = 0;
+
+  for (const auto &a : ser) {
+    ses += a->sessions.size();
+  }
+  for (const auto &a : cli) {
+    ses += a->sessions.size();
+  }
+
+  sessions.labels({label}).set(ses);
 }
 
 template <class transport>
-static bool common(typename cxxhttp::http::server<transport>::session &session,
-                   std::smatch &) {
-  return http<transport>(session,
-                         collector::registry<collector::base>::common());
+static void metrics(typename cxxhttp::http::server<transport>::session &session,
+                    std::smatch &) {
+  static auto &reg = efgy::global<collector::registry<collector::base>>();
+  updateLabels<cxxhttp::transport::tcp>("tcp");
+  updateLabels<cxxhttp::transport::unix>("unix");
+
+  session.reply(200, {{"Content-Type", "text/plain; version=0.0.4"}},
+                reg.text());
 }
 }
 }

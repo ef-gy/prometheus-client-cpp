@@ -41,12 +41,6 @@ class registry {
 
   virtual ~registry(void) {}
 
-  static registry &common(void) {
-    static registry reg;
-
-    return reg;
-  }
-
   virtual std::string text(void) const {
     std::string reply = "";
 
@@ -66,7 +60,7 @@ class registry {
 
 class hub : public registry<base> {
  public:
-  hub(registry<base> &pRegistry = registry<base>::common())
+  hub(registry<base> &pRegistry = efgy::global<registry<base>>())
       : registry<base>(false), root(pRegistry) {
     root.add(*this);
   }
@@ -81,7 +75,7 @@ class base : public hub {
  public:
   base(const std::string &pName, const std::string &pType = "",
        const std::vector<std::string> &pLabels = std::vector<std::string>(),
-       registry<base> &pRegistry = registry<base>::common(),
+       registry<base> &pRegistry = efgy::global<registry<base>>(),
        const std::map<std::string, std::string> &pLabel =
            std::map<std::string, std::string>())
       : name(pName),
