@@ -27,45 +27,31 @@ template <class base = base>
 class registry;
 }
 
-static bool setDefaultMetrics(collector::registry<collector::base> &reg);
-
 namespace collector {
 template <class base>
-class registry {
+class registry : public std::set<const registry<base> *> {
  public:
-  registry(bool addDefaultCollectors = true) : collectors() {
-    if (addDefaultCollectors) {
-      setDefaultMetrics(*this);
-    }
-  }
-
   virtual ~registry(void) {}
 
   virtual std::string text(void) const {
-    std::string reply = "";
+    std::string reply;
 
-    for (const auto &c : collectors) {
+    for (const auto &c : *this) {
       reply += c->text();
     }
 
     return reply;
   }
-
-  void add(const registry &pCollector) { collectors.insert(&pCollector); }
-  void remove(const registry &pCollector) { collectors.erase(&pCollector); }
-
- protected:
-  std::set<const registry *> collectors;
 };
 
 class hub : public registry<base> {
  public:
   hub(registry<base> &pRegistry = efgy::global<registry<base>>())
-      : registry<base>(false), root(pRegistry) {
-    root.add(*this);
+      : root(pRegistry) {
+    root.insert(this);
   }
 
-  virtual ~hub(void) { root.remove(*this); }
+  virtual ~hub(void) { root.erase(this); }
 
  protected:
   registry<base> &root;
@@ -85,7 +71,8 @@ class base : public hub {
         child(),
         labelNames(pLabels),
         label(pLabel),
-        haveTimestamp(false) {}
+        haveTimestamp(false),
+        wasSet(false) {}
 
   virtual ~base(void) {
     for (auto &c : child) {
@@ -94,6 +81,7 @@ class base : public hub {
   }
 
   virtual std::string value(void) const = 0;
+  bool wasSet;
 
   virtual std::string text(void) const {
     std::string reply;
@@ -106,14 +94,18 @@ class base : public hub {
         reply += "# HELP " + name + " " + help + "\n";
       }
     }
-    reply += registry<base>::text();
-    reply += name + ls + " " + value();
-    if (haveTimestamp) {
-      std::ostringstream os("");
-      os << timestamp;
-      reply += " " + os.str();
+    const auto &subtext = hub::text();
+    reply += subtext;
+    if (wasSet || subtext.empty()) {
+      reply += name + ls + " " + value();
+      if (haveTimestamp) {
+        std::ostringstream os("");
+        os << timestamp;
+        reply += " " + os.str();
+      }
+      reply += "\n";
     }
-    return reply + "\n";
+    return reply;
   }
 
   const std::string name;

@@ -1,5 +1,20 @@
+# editor temporary files
+*.swp
+*.tmp
+
+# OSX symbol files
+*.dSYM
+.DS_*
+
+# test cases, should they exist
+test-case-*
+!src/test-case
+
+# auto-generated docs
+documentation/html
+
+# build files
 dependencies.mk
-*.tag
+
+# targets
 server
-documentation
-doxyfile

@@ -16,10 +16,6 @@
 #if !defined(PROMETHEUS_VERSION_H)
 #define PROMETHEUS_VERSION_H
 
-/* Prometheus base name space
- *
- * Everything related to the prometheus client is contained in this namespace.
- */
 namespace prometheus {
 /* Prometheus version
  *

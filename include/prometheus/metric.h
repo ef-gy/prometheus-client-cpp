@@ -39,11 +39,13 @@ class counter : public collector::base {
 
   counter &inc(const T &v = 1) {
     val += v >= 0 ? v : 0;
+    wasSet = true;
     return *this;
   }
 
   counter &set(const T &v) {
     val = v > val ? v : val;
+    wasSet = true;
     return *this;
   }
 
@@ -79,21 +81,25 @@ class gauge : public collector::base {
 
   gauge &inc(const T &v = 1) {
     val += v;
+    wasSet = true;
     return *this;
   }
 
   gauge &dec(const T &v = 1) {
     val -= v;
+    wasSet = true;
     return *this;
   }
 
   gauge &set(const T &v) {
     val = v;
+    wasSet = true;
     return *this;
   }
 
   gauge &setToCurrentTime(void) {
     val = std::time(0);
+    wasSet = true;
     return *this;
   }
 
@@ -166,11 +172,17 @@ using counter = custom::counter<long long>;
 using histogram = custom::histogram<long long>;
 }
 
-static bool setDefaultMetrics(collector::registry<collector::base> &reg) {
-  (new metric::gauge("process_start_time_seconds", {}, reg))
-      ->setToCurrentTime();
+namespace special {
+class processStartTime : public metric::gauge {
+ public:
+  processStartTime(collector::registry<collector::base> &reg =
+                       efgy::global<collector::registry<collector::base>>())
+      : metric::gauge("process_start_time_seconds", {}, reg) {
+    setToCurrentTime();
+  }
+};
 
-  return true;
+static processStartTime processStartTimeMetric;
 }
 }
 
