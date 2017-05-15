@@ -21,7 +21,7 @@ namespace prometheus {
 namespace http {
 static const std::string resource = "/metrics";
 
-static metric::gauge sessions("http_server_sessions_total", {"transport"});
+static metric::gauge sessions("http_sessions_total", {"transport"});
 static metric::gauge servers("http_servers_total", {"transport"});
 static metric::gauge servlets("http_servlets_total", {"transport"});
 static metric::gauge clients("http_clients_total", {"transport"});
