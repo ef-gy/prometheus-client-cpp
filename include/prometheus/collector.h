@@ -35,27 +35,22 @@ class collector {
 
   long long timestamp;
 
-  bool wasSet;
-  bool haveTimestamp;
+  bool wasSet = false;
+  bool haveTimestamp = false;
   std::set<const collector *> descendant;
 
-  collector(void) : root(*this), haveTimestamp(false), wasSet(false) {}
+  collector(void) : root(*this) {}
 
-  collector(
-      const std::string &pName, const std::string &pType = "",
-      const std::string &pHelp = "",
-      const std::vector<std::string> &pLabels = std::vector<std::string>(),
-      collector &pRegistry = efgy::global<collector>(),
-      const std::map<std::string, std::string> &pLabel =
-          std::map<std::string, std::string>())
+  collector(const std::string &pName, const std::string &pType,
+            const std::string &pHelp, const std::vector<std::string> &pLabels,
+            collector &pRegistry,
+            const std::map<std::string, std::string> &pLabel)
       : name(pName),
         root(pRegistry),
         type(pType),
         help(pHelp),
         labelNames(pLabels),
-        label(pLabel),
-        haveTimestamp(false),
-        wasSet(false) {
+        label(pLabel) {
     root.descendant.insert(this);
   }
 
@@ -71,13 +66,9 @@ class collector {
   std::string text(void) const {
     std::string reply;
     const std::string ls = labelString(activeLabels());
-    if (ls == "") {
-      if (type != "") {
-        reply += "# TYPE " + name + " " + type + "\n";
-      }
-      if (help != "") {
-        reply += "# HELP " + name + " " + help + "\n";
-      }
+    if (!name.empty() && ls.empty()) {
+      reply += "# TYPE " + name + " " + type + "\n";
+      reply += "# HELP " + name + " " + help + "\n";
     }
     std::string subtext;
     for (const auto &c : descendant) {
@@ -112,7 +103,7 @@ class collector {
   std::map<std::string, std::string> activeLabels(void) const {
     std::map<std::string, std::string> rv;
     for (const auto &l : label) {
-      if (l.second != "") {
+      if (!l.second.empty()) {
         rv[l.first] = l.second;
       }
     }
@@ -137,37 +128,23 @@ class collector {
 
   static std::string labelString(
       const std::map<std::string, std::string> &labels) {
-    if (labels.size() == 0) {
-      return "";
-    }
-
-    bool first = true;
-    std::string reply = "{";
+    std::string reply;
     for (const auto &l : labels) {
-      if (first) {
-        first = false;
-      } else {
-        reply += ",";
-      }
-      reply += escape(l.first) + "=\"" + escape(l.second) + "\"";
+      reply += (reply.empty() ? "" : ",") + escape(l.first) + "=\"" +
+               escape(l.second) + "\"";
     }
-    return reply + "}";
+    return reply.empty() ? "" : "{" + reply + "}";
   }
 
-  static const std::string escape(const std::string &s) {
-    std::string r = "";
+  static std::string escape(const std::string &s) {
+    std::string r;
     for (const auto &c : s) {
       switch (c) {
         case '\\':
-          r += "\\\\";
-          break;
         case '"':
-          r += "\\\"";
-          break;
-        default:
-          r += c;
-          break;
+          r.push_back('\\');
       }
+      r.push_back(c);
     }
     return r;
   }

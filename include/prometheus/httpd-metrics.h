@@ -73,12 +73,17 @@ static void metrics(typename cxxhttp::http::server<transport>::session &session,
                 reg.text());
 }
 
+/* Metrics resource regexp.
+ *
+ * Prometheus metrics are exported on `/metrics` as is the default for
+ * Prometheus clients.
+ */
 static const std::string resource = "/metrics";
 
-static cxxhttp::httpd::servlet<asio::ip::tcp> tcp(resource,
-                                                  metrics<asio::ip::tcp>);
-static cxxhttp::httpd::servlet<asio::local::stream_protocol> unix(
-    resource, metrics<asio::local::stream_protocol>);
+static cxxhttp::httpd::servlet<cxxhttp::transport::tcp> tcp(
+    resource, metrics<cxxhttp::transport::tcp>);
+static cxxhttp::httpd::servlet<cxxhttp::transport::unix> unix(
+    resource, metrics<cxxhttp::transport::unix>);
 }
 }
 }
