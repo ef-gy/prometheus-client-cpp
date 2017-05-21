@@ -69,8 +69,8 @@ static void metrics(typename cxxhttp::http::server<transport>::session &session,
   updateLabels<cxxhttp::transport::tcp>("tcp");
   updateLabels<cxxhttp::transport::unix>("unix");
 
-  session.reply(200, {{"Content-Type", "text/plain; version=0.0.4"}},
-                reg.text());
+  session.reply(200, reg.text(),
+                {{"Content-Type", "text/plain; version=0.0.4"}});
 }
 
 /* Metrics resource regexp.
