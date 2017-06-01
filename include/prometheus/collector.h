@@ -22,9 +22,10 @@
 
 #include <ctime>
 #include <map>
-#include <set>
 #include <string>
 #include <vector>
+
+#include <ef.gy/global.h>
 
 namespace prometheus {
 class collector {
@@ -37,31 +38,32 @@ class collector {
 
   bool wasSet = false;
   bool haveTimestamp = false;
-  std::set<const collector *> descendant;
 
-  collector(void) : root(*this) {}
+  long long value = 0;
+  collector &root;
+  std::map<std::string, collector *> child;
+  std::map<std::string, std::string> label;
+  const std::vector<std::string> labelNames;
+
+  collector(void) : root(*this), beacon(*this, root.descendant) {}
 
   collector(const std::string &pName, const std::string &pType,
             const std::string &pHelp, const std::vector<std::string> &pLabels,
             collector &pRegistry,
             const std::map<std::string, std::string> &pLabel)
       : name(pName),
-        root(pRegistry),
         type(pType),
         help(pHelp),
+        root(pRegistry),
+        label(pLabel),
         labelNames(pLabels),
-        label(pLabel) {
-    root.descendant.insert(this);
-  }
+        beacon(*this, root.descendant) {}
 
   virtual ~collector(void) {
-    root.descendant.erase(this);
     for (auto &c : child) {
       delete c.second;
     }
   }
-
-  virtual std::string value(void) const { return "0"; }
 
   std::string text(void) const {
     std::string reply;
@@ -72,11 +74,13 @@ class collector {
     }
     std::string subtext;
     for (const auto &c : descendant) {
-      subtext += c->text();
+      if (c != this) {
+        subtext += c->text();
+      }
     }
     reply += subtext;
     if (wasSet || subtext.empty()) {
-      reply += name + ls + " " + value();
+      reply += name + ls + " " + std::to_string(value);
       if (haveTimestamp) {
         std::ostringstream os("");
         os << timestamp;
@@ -87,17 +91,9 @@ class collector {
     return reply;
   }
 
-  collector &updateTimestamp(void) {
-    haveTimestamp = false;
-
-    return *this;
-  }
-
-  collector &updateTimestamp(long long t) {
-    haveTimestamp = true;
+  void updateTimestamp(long long t) {
     timestamp = t;
-
-    return *this;
+    haveTimestamp = true;
   }
 
   std::map<std::string, std::string> activeLabels(void) const {
@@ -109,12 +105,6 @@ class collector {
     }
     return rv;
   }
-
- protected:
-  collector &root;
-  std::map<std::string, collector *> child;
-  std::map<std::string, std::string> label;
-  const std::vector<std::string> labelNames;
 
   std::map<std::string, std::string> applyLabels(
       const std::vector<std::string> &labelValues) const {
@@ -130,12 +120,15 @@ class collector {
       const std::map<std::string, std::string> &labels) {
     std::string reply;
     for (const auto &l : labels) {
-      reply += (reply.empty() ? "" : ",") + escape(l.first) + "=\"" +
-               escape(l.second) + "\"";
+      if (!reply.empty()) {
+        reply += ",";
+      }
+      reply += l.first + "=\"" + escape(l.second) + "\"";
     }
     return reply.empty() ? "" : "{" + reply + "}";
   }
 
+ protected:
   static std::string escape(const std::string &s) {
     std::string r;
     for (const auto &c : s) {
@@ -148,6 +141,9 @@ class collector {
     }
     return r;
   }
+
+  efgy::beacons<collector> descendant;
+  efgy::beacon<collector> beacon;
 };
 }
 

@@ -35,6 +35,9 @@ static metric::counter queries(
 static metric::gauge clients(
     "http_clients_total", "Active HTTP clients, broken out by transport type.",
     {"transport"});
+static metric::counter errors("http_errors_total",
+                              "Transport errors, broken out by transport type.",
+                              {"transport"});
 
 template <class transport>
 static void updateLabels(const std::string &label) {
@@ -46,27 +49,28 @@ static void updateLabels(const std::string &label) {
   servers.labels({label}).set(ser.size());
   clients.labels({label}).set(cli.size());
 
-  std::size_t ses = 0;
-  std::size_t q = 0;
+  std::size_t ses = 0, q = 0, e = 0;
 
   for (const auto &a : ser) {
     ses += a->sessions.size();
     for (const auto &s : a->sessions) {
       q += s->queries();
+      e += s->errors;
     }
   }
   for (const auto &a : cli) {
     ses += a->sessions.size();
     for (const auto &s : a->sessions) {
       q += s->queries();
+      e += s->errors;
     }
   }
 
   sessions.labels({label}).set(ses);
   queries.labels({label}).set(q);
+  errors.labels({label}).set(e);
 }
 
-namespace metrics {
 static void metrics(cxxhttp::http::sessionData &session, std::smatch &) {
   static auto &reg = efgy::global<collector>();
   updateLabels<cxxhttp::transport::tcp>("tcp");
@@ -76,15 +80,14 @@ static void metrics(cxxhttp::http::sessionData &session, std::smatch &) {
                 {{"Content-Type", "text/plain; version=0.0.4"}});
 }
 
-/* Metrics resource regexp.
+/* Metrics servlet.
  *
  * Prometheus metrics are exported on `/metrics` as is the default for
  * Prometheus clients.
  */
-static const std::string resource = "/metrics";
-
-static cxxhttp::http::servlet servlet(resource, metrics);
-}
+static cxxhttp::http::servlet servlet(
+    "/metrics", metrics, "GET", {},
+    "Exports monitoring data in the Prometheus format.");
 }
 }
 

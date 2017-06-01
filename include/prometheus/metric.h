@@ -15,159 +15,111 @@
 #define PROMETHEUS_METRIC_H
 
 #include <prometheus/collector.h>
-#include <sstream>
 
 namespace prometheus {
 namespace metric {
-namespace custom {
-template <typename T>
+template <class T>
+T &labels(T &c, const std::vector<std::string> &labelValues) {
+  const auto newLabels = c.applyLabels(labelValues);
+  const auto ls = c.labelString(newLabels);
+  if (!c.child[ls]) {
+    c.child[ls] = new T(c.name, c.help, c.labelNames, c, newLabels);
+  }
+  return *((T *)c.child[ls]);
+}
+
 class counter : public collector {
  public:
   counter(const std::string &pName, const std::string &pHelp,
-          const std::vector<std::string> &pLabels = std::vector<std::string>(),
+          const std::vector<std::string> &pLabels = {},
           collector &reg = efgy::global<collector>(),
-          const std::map<std::string, std::string> &pLabel =
-              std::map<std::string, std::string>())
-      : collector(pName, "counter", pHelp, pLabels, reg, pLabel), val(0) {}
+          const std::map<std::string, std::string> &pLabel = {})
+      : collector(pName, "counter", pHelp, pLabels, reg, pLabel) {}
 
-  virtual std::string value(void) const {
-    std::ostringstream oss("");
-    oss << val;
-    return oss.str();
-  }
-
-  counter &inc(const T &v = 1) {
-    val += v >= 0 ? v : 0;
+  void set(long long v) {
+    value = v > value ? v : value;
     wasSet = true;
-    return *this;
   }
 
-  counter &set(const T &v) {
-    val = v > val ? v : val;
-    wasSet = true;
-    return *this;
-  }
+  void inc(long long v = 1) { set(value + (v >= 0 ? v : 0)); }
 
   counter &labels(const std::vector<std::string> &labelValues) {
-    const auto newLabels = applyLabels(labelValues);
-    const auto ls = labelString(newLabels);
-    if (!child[ls]) {
-      child[ls] = new counter(name, help, labelNames, *this, newLabels);
-    }
-    return *((counter *)child[ls]);
+    return metric::labels(*this, labelValues);
   }
-
- protected:
-  T val;
 };
 
-template <typename T>
 class gauge : public collector {
  public:
   gauge(const std::string &pName, const std::string &pHelp,
-        const std::vector<std::string> &pLabels = std::vector<std::string>(),
+        const std::vector<std::string> &pLabels = {},
         collector &reg = efgy::global<collector>(),
-        const std::map<std::string, std::string> &pLabel =
-            std::map<std::string, std::string>())
-      : collector(pName, "gauge", pHelp, pLabels, reg, pLabel), val(0) {}
+        const std::map<std::string, std::string> &pLabel = {})
+      : collector(pName, "gauge", pHelp, pLabels, reg, pLabel) {}
 
-  virtual std::string value(void) const {
-    std::ostringstream oss("");
-    oss << val;
-    return oss.str();
-  }
-
-  gauge &inc(const T &v = 1) {
-    val += v;
+  void set(long long v) {
+    value = v;
     wasSet = true;
-    return *this;
   }
 
-  gauge &dec(const T &v = 1) {
-    val -= v;
-    wasSet = true;
-    return *this;
-  }
+  void inc(long long v = 1) { set(value + v); }
 
-  gauge &set(const T &v) {
-    val = v;
-    wasSet = true;
-    return *this;
-  }
+  void dec(long long v = 1) { set(value - v); }
 
-  gauge &setToCurrentTime(void) {
-    val = std::time(0);
-    wasSet = true;
-    return *this;
-  }
+  void setToCurrentTime(void) { set(std::time(0)); }
 
   gauge &labels(const std::vector<std::string> &labelValues) {
-    const auto newLabels = applyLabels(labelValues);
-    const auto ls = labelString(newLabels);
-    if (!child[ls]) {
-      child[ls] = new gauge(name, help, labelNames, *this, newLabels);
-    }
-    return *((gauge *)child[ls]);
+    return metric::labels(*this, labelValues);
   }
-
- protected:
-  T val;
 };
 
-template <typename T>
 class histogram : public collector {
  public:
-  histogram(
-      const std::string &pName, const std::string &pHelp,
-      const std::vector<std::string> &pLabels = std::vector<std::string>(),
-      collector &reg = efgy::global<collector>(),
-      const std::map<std::string, std::string> &pLabel =
-          std::map<std::string, std::string>())
-      : collector(pName, "histogram", pHelp, pLabels, reg, pLabel),
-        count(pName, pLabels, *this, pLabel),
-        sum(pName, pLabels, *this, pLabel),
-        inf(pName, pLabels, *this, pLabel) {
+  histogram(const std::string &pName, const std::string &pHelp,
+            const std::vector<std::string> &pLabels = {},
+            collector &reg = efgy::global<collector>(),
+            const std::map<std::string, std::string> &pLabel = {})
+      : collector(pName + "_bucket", "histogram", pHelp, pLabels, reg, pLabel),
+        count(pName + "_count", pHelp, pLabels, *this, pLabel),
+        sum(pName + "_sum", pHelp, pLabels, *this, pLabel),
+        inf(pName + "_bucket", pHelp, pLabels, *this, pLabel) {
     inf.label["le"] = "+Inf";
   }
 
   histogram &labels(const std::vector<std::string> &labelValues) {
-    const auto newLabels = applyLabels(labelValues);
-    const auto ls = labelString(newLabels);
-    if (!child[ls]) {
-      child[ls] = new histogram(name, help, labelNames, *this, newLabels);
-    }
-    return *((histogram *)child[ls]);
+    return metric::labels(*this, labelValues);
   }
 
-  counter<T> &bucket(const T &val) const {
-    for (const auto &b : buckets) {
-      if (val <= b.first()) {
-        return *b.second();
-      }
+  histogram &bucket(long long b) {
+    if (!buckets[b]) {
+      auto label = activeLabels();
+      label["le"] = std::to_string(b);
+
+      const auto ls = labelString(label);
+      buckets[b] = new counter(name, help, labelNames, *this, label);
+      child[ls] = buckets[b];
     }
-
-    return inf;
-  }
-
-  histogram &observe(const T &val) {
-    bucket(val).inc();
-    count.inc(val);
-    sum.inc();
     return *this;
   }
 
+  void observe(long long val) {
+    for (const auto &b : buckets) {
+      if (value <= b.first) {
+        b.second->inc();
+      }
+    }
+
+    inf.inc();
+    count.inc();
+    sum.inc(val);
+  }
+
  protected:
-  counter<T> count;
-  gauge<T> sum;
+  std::map<long long, counter *> buckets;
 
-  std::map<T, counter<T> *> buckets;
-  counter<T> inf;
+  counter count;
+  gauge sum;
+  counter inf;
 };
-}
-
-using gauge = custom::gauge<long long>;
-using counter = custom::counter<long long>;
-using histogram = custom::histogram<long long>;
 }
 
 namespace special {

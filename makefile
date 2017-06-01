@@ -2,3 +2,5 @@
 
 NAME:=prometheus
 VERSION:=1
+
+CXXFLAGS+=-pedantic -Wall
