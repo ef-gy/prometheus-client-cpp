@@ -28,9 +28,9 @@ static metric::gauge sessions(
 static metric::gauge servers(
     "http_servers_total", "Active HTTP servers, broken out by transport type.",
     {"transport"});
-static metric::gauge servlets(
-    "http_servlets_total",
-    "Active HTTP server servlets, broken out by transport type.",
+static metric::counter queries(
+    "http_queries_total",
+    "Served HTTP queries over all sessions, broken out by transport type.",
     {"transport"});
 static metric::gauge clients(
     "http_clients_total", "Active HTTP clients, broken out by transport type.",
@@ -42,29 +42,32 @@ static void updateLabels(const std::string &label) {
       efgy::global<std::set<cxxhttp::http::server<transport> *>>();
   const auto &cli =
       efgy::global<std::set<cxxhttp::http::client<transport> *>>();
-  const auto &srv =
-      efgy::global<std::set<cxxhttp::httpd::servlet<transport> *>>();
 
   servers.labels({label}).set(ser.size());
-  servlets.labels({label}).set(srv.size());
   clients.labels({label}).set(cli.size());
 
   std::size_t ses = 0;
+  std::size_t q = 0;
 
   for (const auto &a : ser) {
     ses += a->sessions.size();
+    for (const auto &s : a->sessions) {
+      q += s->queries();
+    }
   }
   for (const auto &a : cli) {
     ses += a->sessions.size();
+    for (const auto &s : a->sessions) {
+      q += s->queries();
+    }
   }
 
   sessions.labels({label}).set(ses);
+  queries.labels({label}).set(q);
 }
 
 namespace metrics {
-template <class transport>
-static void metrics(typename cxxhttp::http::server<transport>::session &session,
-                    std::smatch &) {
+static void metrics(cxxhttp::http::sessionData &session, std::smatch &) {
   static auto &reg = efgy::global<collector>();
   updateLabels<cxxhttp::transport::tcp>("tcp");
   updateLabels<cxxhttp::transport::unix>("unix");
@@ -80,10 +83,7 @@ static void metrics(typename cxxhttp::http::server<transport>::session &session,
  */
 static const std::string resource = "/metrics";
 
-static cxxhttp::httpd::servlet<cxxhttp::transport::tcp> tcp(
-    resource, metrics<cxxhttp::transport::tcp>);
-static cxxhttp::httpd::servlet<cxxhttp::transport::unix> unix(
-    resource, metrics<cxxhttp::transport::unix>);
+static cxxhttp::http::servlet servlet(resource, metrics);
 }
 }
 }
