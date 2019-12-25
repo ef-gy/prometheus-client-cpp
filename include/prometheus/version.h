@@ -23,6 +23,6 @@ namespace prometheus {
  * integer.
  */
 static const unsigned int version = 1;
-}
+}  // namespace prometheus
 
 #endif

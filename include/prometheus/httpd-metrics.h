@@ -88,7 +88,7 @@ static void metrics(cxxhttp::http::sessionData &session, std::smatch &) {
 static cxxhttp::http::servlet servlet(
     "/metrics", metrics, "GET", {},
     "Exports monitoring data in the Prometheus format.");
-}
-}
+}  // namespace httpd
+}  // namespace prometheus
 
 #endif

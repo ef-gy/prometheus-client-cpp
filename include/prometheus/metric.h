@@ -120,7 +120,7 @@ class histogram : public collector {
   gauge sum;
   counter inf;
 };
-}
+}  // namespace metric
 
 namespace special {
 class processStartTime : public metric::gauge {
@@ -134,7 +134,7 @@ class processStartTime : public metric::gauge {
 };
 
 static processStartTime processStartTimeMetric;
-}
-}
+}  // namespace special
+}  // namespace prometheus
 
 #endif

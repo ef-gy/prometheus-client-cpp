@@ -22,6 +22,7 @@
 
 #include <ctime>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -145,6 +146,6 @@ class collector {
   efgy::beacons<collector> descendant;
   efgy::beacon<collector> beacon;
 };
-}
+}  // namespace prometheus
 
 #endif
