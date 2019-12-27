@@ -28,6 +28,17 @@ T &labels(T &c, const std::vector<std::string> &labelValues) {
   return *((T *)c.child[ls]);
 }
 
+/* Counter metric.
+ *
+ * This is the metric to use for anything where the value is only supposed to
+ * increase, which is why there is only an `inc()` function and nothing to set
+ * the value directly. The advantage is that if a process restarts and this
+ * resets to zero, your monitoring system can work out that this happened and
+ * there won't be any measuring discontinuity.
+ *
+ * Typical values for this would be consumed CPU cycles, or the number of
+ * processed requests.
+ */
 class counter : public collector {
  public:
   counter(const std::string &pName, const std::string &pHelp,
@@ -48,6 +59,12 @@ class counter : public collector {
   }
 };
 
+/* Gauge metric.
+ *
+ * This kind of metric can have its value decrease as well as increase. This is
+ * for values you measure that are not intended to be continually increasing in
+ * value, like RAM usage.
+ */
 class gauge : public collector {
  public:
   gauge(const std::string &pName, const std::string &pHelp,
