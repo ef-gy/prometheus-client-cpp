@@ -29,6 +29,19 @@
 #include <ef.gy/global.h>
 
 namespace prometheus {
+
+/* Collector class.
+ *
+ * We use a tree structure for our metrics, meaning that each metric is a kind
+ * of collector, and label sets for a metric end up as a proper sub-metric for
+ * them.
+ *
+ * When generating the /metrics output, we generate our own and then the
+ * remainder for all sub-metrics, recursively.
+ *
+ * Generally you want to use one of the pre-defined metrics types, as they have
+ * the type information set correctly for typical use cases.
+ */
 class collector {
  public:
   const std::string name;
@@ -92,6 +105,13 @@ class collector {
     return reply;
   }
 
+  /* Update the metric's timestamp to a given value.
+   * @t The timestamp to associate with the value.
+   *
+   * Only use if you have an actual value that you know out of band to be
+   * right for the value you set. If you don't set a timestamp then none is sent
+   * back to clients, and the current time is assumed.
+   */
   void updateTimestamp(long long t) {
     timestamp = t;
     haveTimestamp = true;
